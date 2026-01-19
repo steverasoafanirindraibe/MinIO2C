@@ -1,0 +1,50 @@
+# .gitignore pour projet Next.js (TypeScript) + Postgres + pnpm/npm
+
+# Dépendances (jamais commitées)
+node_modules/
+.pnp/
+.pnp.js
+.yarn/install-state.gz
+
+# Build et cache Next.js
+.next/
+out/
+.swc/
+
+# Fichiers d'environnement (sensibles : DB, JWT, MinIO, etc.)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs et temporaires
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Fichiers système / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Fichiers de build / dist
+dist/
+build/
+
+# Fichiers Drizzle / migrations (si tu ne veux pas commiter les snapshots générés)
+drizzle/
+*.sql  # Optionnel : si tu génères des fichiers SQL manuellement
+
+# PostgreSQL local (si tu as des dumps locaux)
+*.dump
+*.backup
+
+# Autres (ajoute selon tes besoins)
+coverage/
+*.log
+*.cache

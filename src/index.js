@@ -1,104 +1,130 @@
-import inquirer from "inquirer";
-import { isMcInstalled, downloadMc } from "./services/mc.service.js";
-import { setAlias, createUser } from "./services/minio.service.js";
+#!/usr/bin/env node
 
-console.log("=== MinIO User Manager ===");
+/**
+ * ==========================================
+ * MinIO2C - Gestionnaire MinIO via mc
+ * Version simple compatible .exe (pkg)
+ * ==========================================
+ */
 
-// 1️⃣ Vérifier mc
-if (!isMcInstalled()) {
-  const { confirm } = await inquirer.prompt({
-    type: "confirm",
-    name: "confirm",
-    message: "mc n'est pas installé. Voulez-vous le télécharger automatiquement ?",
-    default: true
-  });
+const { execSync } = require("child_process");
+const readline = require("readline");
+const fs = require("fs");
 
-  if (!confirm) {
-    console.log("mc est requis pour continuer.");
-    process.exit(1);
+const MC_PATH = "mc.exe"; // mc doit être dans le même dossier que le .exe
+
+// Création interface terminal
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Fonction pour exécuter mc
+function runMc(command) {
+  try {
+    console.log("\n> mc " + command);
+    execSync(`${MC_PATH} ${command}`, { stdio: "inherit" });
+  } catch (error) {
+    console.log("❌ Erreur lors de l'exécution de la commande.");
   }
-
-  await downloadMc();
-  console.log("mc téléchargé avec succès ✅");
 }
 
-// Créer utilisateur applicatif
-const userAnswers = await inquirer.prompt([
-  { name: "user", message: "Nom de l'utilisateur applicatif", default: "steve_user" },
-  { name: "password", message: "Mot de passe", type: "password", default: "steve_password" },
-  { name: "bucket", message: "Nom du bucket à utiliser", default: "app-files" },
-]);
+// Configuration alias
+function configureAlias(callback) {
+  rl.question("Alias MinIO (ex: local): ", (alias) => {
+    rl.question("Endpoint (ex: http://localhost:9000): ", (endpoint) => {
+      rl.question("Access Key: ", (accessKey) => {
+        rl.question("Secret Key: ", (secretKey) => {
+          runMc(`alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`);
+          callback(alias);
+        });
+      });
+    });
+  });
+}
 
-// 2️⃣ Exemple simple
-await setAlias("myminio", "http://localhost:9000", "minioadmin", "minioadmin123");
-await createUser("myminio", "app_user", "StrongPass123!");
+// MENU PRINCIPAL
+function showMenu(alias) {
+  console.log("\n=== MinIO2C MENU ===");
+  console.log("1 - Voir les utilisateurs");
+  console.log("2 - Créer un utilisateur");
+  console.log("3 - Supprimer un utilisateur");
+  console.log("4 - Créer un bucket");
+  console.log("5 - Voir les buckets");
+  console.log("6 - Créer une policy");
+  console.log("7 - Attacher une policy à un user");
+  console.log("0 - Quitter");
 
-console.log("🎉 Utilisateur créé avec succès");
+  rl.question("Choix: ", (choice) => {
+    switch (choice) {
+      case "1":
+        runMc(`admin user list ${alias}`);
+        break;
 
+      case "2":
+        rl.question("Nom utilisateur: ", (user) => {
+          rl.question("Mot de passe: ", (pass) => {
+            runMc(`admin user add ${alias} ${user} ${pass}`);
+            showMenu(alias);
+          });
+        });
+        return;
 
-// const { execSync } = require("child_process");
-// const inquirer = require("inquirer");
-// const fs = require("fs");
+      case "3":
+        rl.question("Nom utilisateur à supprimer: ", (user) => {
+          runMc(`admin user remove ${alias} ${user}`);
+          showMenu(alias);
+        });
+        return;
 
-// async function main() {
-//   console.log("=== MinIO User Manager ===");
+      case "4":
+        rl.question("Nom du bucket: ", (bucket) => {
+          runMc(`mb ${alias}/${bucket}`);
+          showMenu(alias);
+        });
+        return;
 
-//   // Vérifier si mc est installé
-//   try {
-//     execSync("mc --version", { stdio: "ignore" });
-//   } catch {
-//     const { installMc } = await inquirer.prompt({
-//       type: "confirm",
-//       name: "installMc",
-//       message: "MinIO Client (mc) n'est pas installé. Voulez-vous l'installer maintenant ?",
-//       default: true,
-//     });
-//     if (installMc) {
-//       console.log("Téléchargement et installation de mc...");
-//       console.log("Installation automatique non implémentée dans cet exemple.");
-//       process.exit();
-//     } else {
-//       console.log("Impossible de continuer sans mc.");
-//       process.exit();
-//     }
-//   }
+      case "5":
+        runMc(`ls ${alias}`);
+        break;
 
-//   // Configurer l'alias
-//   const aliasAnswers = await inquirer.prompt([
-//     { name: "alias", message: "Nom de l'alias pour MinIO", default: "myminio" },
-//     { name: "endpoint", message: "Endpoint MinIO", default: "http://localhost:9000" },
-//     { name: "rootUser", message: "Root User" },
-//     { name: "rootPassword", message: "Root Password", type: "password" },
-//   ]);
+      case "6":
+        rl.question("Nom policy: ", (policyName) => {
+          rl.question("Chemin fichier JSON policy: ", (file) => {
+            runMc(`admin policy add ${alias} ${policyName} ${file}`);
+            showMenu(alias);
+          });
+        });
+        return;
 
-//   execSync(`mc alias set ${aliasAnswers.alias} ${aliasAnswers.endpoint} ${aliasAnswers.rootUser} ${aliasAnswers.rootPassword}`, { stdio: "inherit" });
+      case "7":
+        rl.question("Nom utilisateur: ", (user) => {
+          rl.question("Nom policy: ", (policy) => {
+            runMc(`admin policy attach ${alias} ${policy} --user=${user}`);
+            showMenu(alias);
+          });
+        });
+        return;
 
-//   // Créer utilisateur applicatif
-//   const userAnswers = await inquirer.prompt([
-//     { name: "user", message: "Nom de l'utilisateur applicatif" },
-//     { name: "password", message: "Mot de passe", type: "password" },
-//     { name: "bucket", message: "Nom du bucket à utiliser", default: "app-files" },
-//   ]);
+      case "0":
+        console.log("Au revoir 👋");
+        rl.close();
+        return;
 
-//   execSync(`mc mb ${aliasAnswers.alias}/${userAnswers.bucket}`, { stdio: "inherit" });
-//   execSync(`mc admin user add ${aliasAnswers.alias} ${userAnswers.user} ${userAnswers.password}`, { stdio: "inherit" });
+      default:
+        console.log("Choix invalide.");
+    }
 
-//   // Créer policy JSON
-//   const policy = {
-//     Version: "2012-10-17",
-//     Statement: [
-//       {
-//         Effect: "Allow",
-//         Action: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
-//         Resource: [`arn:aws:s3:::${userAnswers.bucket}/*`, `arn:aws:s3:::${userAnswers.bucket}`],
-//       },
-//     ],
-//   };
-//   fs.writeFileSync("app-policy.json", JSON.stringify(policy, null, 2));
-//   execSync(`mc admin policy add ${aliasAnswers.alias} app-policy app-policy.json`, { stdio: "inherit" });
-//   execSync(`mc admin policy set ${aliasAnswers.alias} app-policy user=${userAnswers.user}`, { stdio: "inherit" });
+    showMenu(alias);
+  });
+}
 
-//   console.log("Utilisateur et policy créés avec succès !");
-// }
+// Lancement
+console.log("=== MinIO2C ===");
 
-// main();
+if (!fs.existsSync(MC_PATH)) {
+  console.log("⚠️ mc.exe doit être dans le même dossier que l'exécutable.");
+  process.exit(1);
+}
+
+configureAlias(showMenu);

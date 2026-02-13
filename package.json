@@ -1,25 +1,15 @@
 {
   "name": "minio2c",
   "version": "1.0.0",
-  "type": "module",
-  "description": "",
-  "main": "index.js",
+  "description": "MinIO CLI Manager",
+  "main": "src/index.js",
+  "bin": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "build:win": "pkg . --targets node18-win-x64 --output distribution/MinIO2C.exe"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/steverasoafanirindraibe/MinIO2C.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/steverasoafanirindraibe/MinIO2C/issues"
-  },
-  "homepage": "https://github.com/steverasoafanirindraibe/MinIO2C#readme",
-  "dependencies": {
-    "inquirer": "^13.2.0"
+  "dependencies": {},
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }

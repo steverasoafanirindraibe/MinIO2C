@@ -132,6 +132,7 @@ function showMenu(alias) {
   console.log("5 - Voir les buckets");
   console.log("6 - Créer une policy");
   console.log("7 - Attacher une policy à un user");
+  console.log("8 - Voir les policies d’un utilisateur");
   console.log("0 - Quitter");
 
   rl.question("Choix: ", (choice) => {
@@ -186,6 +187,13 @@ function showMenu(alias) {
             );
             showMenu(alias);
           });
+        });
+        return;
+        
+      case "8":
+        rl.question("Nom utilisateur: ", (user) => {
+          runMc(`admin policy entities ${alias} --user ${user}`);
+          showMenu(alias);
         });
         return;
 

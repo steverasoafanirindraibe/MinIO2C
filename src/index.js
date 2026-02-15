@@ -1,41 +1,93 @@
 #!/usr/bin/env node
 
 /**
- * ==========================================
+ * =====================================================
  * MinIO2C - Gestionnaire MinIO via mc
- * Version simple compatible .exe (pkg)
- * ==========================================
+ * Version stable compatible .exe (pkg)
+ * Avec téléchargement automatique de mc.exe
+ * =====================================================
  */
 
 const { execSync } = require("child_process");
 const readline = require("readline");
 const fs = require("fs");
+const https = require("https");
+const path = require("path");
 
-const MC_PATH = "mc.exe"; // mc doit être dans le même dossier que le .exe
+// -----------------------------------------------------
+// CONFIGURATION
+// -----------------------------------------------------
 
-// Création interface terminal
+// URL officielle mc Windows
+const MC_DOWNLOAD_URL =
+  "https://dl.min.io/client/mc/release/windows-amd64/mc.exe";
+
+// Chemin où sera stocké mc.exe
+const MC_PATH = path.join(process.cwd(), "mc.exe");
+
+// -----------------------------------------------------
+// INTERFACE TERMINAL
+// -----------------------------------------------------
+
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
-// Fonction pour exécuter mc
+// -----------------------------------------------------
+// TÉLÉCHARGEMENT DE MC
+// -----------------------------------------------------
+
+function downloadMc(callback) {
+  console.log("Téléchargement de mc.exe...");
+  console.log("Source :", MC_DOWNLOAD_URL);
+
+  const file = fs.createWriteStream(MC_PATH);
+
+  https.get(MC_DOWNLOAD_URL, (response) => {
+    if (response.statusCode !== 200) {
+      console.log("Erreur téléchargement :", response.statusCode);
+      process.exit(1);
+    }
+
+    response.pipe(file);
+
+    file.on("finish", () => {
+      file.close();
+      console.log("mc.exe téléchargé avec succès !");
+      callback();
+    });
+  }).on("error", (err) => {
+    console.log("Erreur :", err.message);
+    process.exit(1);
+  });
+}
+
+// -----------------------------------------------------
+// EXECUTION COMMANDE MC
+// -----------------------------------------------------
+
 function runMc(command) {
   try {
     console.log("\n> mc " + command);
-    execSync(`${MC_PATH} ${command}`, { stdio: "inherit" });
+    execSync(`"${MC_PATH}" ${command}`, { stdio: "inherit" });
   } catch (error) {
-    console.log("❌ Erreur lors de l'exécution de la commande.");
+    console.log("Erreur lors de l'exécution.");
   }
 }
 
-// Configuration alias
+// -----------------------------------------------------
+// CONFIGURATION ALIAS
+// -----------------------------------------------------
+
 function configureAlias(callback) {
   rl.question("Alias MinIO (ex: local): ", (alias) => {
     rl.question("Endpoint (ex: http://localhost:9000): ", (endpoint) => {
       rl.question("Access Key: ", (accessKey) => {
         rl.question("Secret Key: ", (secretKey) => {
-          runMc(`alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`);
+          runMc(
+            `alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`
+          );
           callback(alias);
         });
       });
@@ -43,7 +95,10 @@ function configureAlias(callback) {
   });
 }
 
+// -----------------------------------------------------
 // MENU PRINCIPAL
+// -----------------------------------------------------
+
 function showMenu(alias) {
   console.log("\n=== MinIO2C MENU ===");
   console.log("1 - Voir les utilisateurs");
@@ -91,7 +146,9 @@ function showMenu(alias) {
       case "6":
         rl.question("Nom policy: ", (policyName) => {
           rl.question("Chemin fichier JSON policy: ", (file) => {
-            runMc(`admin policy add ${alias} ${policyName} ${file}`);
+            runMc(
+              `admin policy add ${alias} ${policyName} ${file}`
+            );
             showMenu(alias);
           });
         });
@@ -100,7 +157,9 @@ function showMenu(alias) {
       case "7":
         rl.question("Nom utilisateur: ", (user) => {
           rl.question("Nom policy: ", (policy) => {
-            runMc(`admin policy attach ${alias} ${policy} --user=${user}`);
+            runMc(
+              `admin policy attach ${alias} ${policy} --user=${user}`
+            );
             showMenu(alias);
           });
         });
@@ -119,12 +178,27 @@ function showMenu(alias) {
   });
 }
 
-// Lancement
+// -----------------------------------------------------
+// LANCEMENT APPLICATION
+// -----------------------------------------------------
+
 console.log("=== MinIO2C ===");
 
+// Vérifie si mc.exe existe
 if (!fs.existsSync(MC_PATH)) {
-  console.log("⚠️ mc.exe doit être dans le même dossier que l'exécutable.");
-  process.exit(1);
+  rl.question(
+    "mc.exe n'est pas installé. Voulez-vous le télécharger ? (y/n): ",
+    (answer) => {
+      if (answer.toLowerCase() === "y") {
+        downloadMc(() => {
+          configureAlias(showMenu);
+        });
+      } else {
+        console.log("mc est requis pour continuer.");
+        process.exit(1);
+      }
+    }
+  );
+} else {
+  configureAlias(showMenu);
 }
-
-configureAlias(showMenu);

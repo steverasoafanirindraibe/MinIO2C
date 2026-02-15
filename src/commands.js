@@ -18,7 +18,7 @@ export function listUsers(alias) {
  * Créer utilisateur
  */
 export function createUser(alias, user, pass) {
-  run(`admin user add ${alias} ${user} ${pass}`);
+  run(`admin user create ${alias} ${user} ${pass}`);
 }
 
 /**

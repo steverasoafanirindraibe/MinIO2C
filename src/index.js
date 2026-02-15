@@ -81,19 +81,43 @@ function runMc(command) {
 // -----------------------------------------------------
 
 function configureAlias(callback) {
-  rl.question("Alias MinIO (ex: local): ", (alias) => {
-    rl.question("Endpoint (ex: http://localhost:9000): ", (endpoint) => {
-      rl.question("Access Key: ", (accessKey) => {
-        rl.question("Secret Key: ", (secretKey) => {
-          runMc(
-            `alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`
-          );
-          callback(alias);
+  rl.question("Alias MinIO (ex: local) [local]: ", (aliasInput) => {
+    const alias = aliasInput.trim() || "local";
+
+    rl.question(
+      "Endpoint (ex: http://localhost:9000) [http://localhost:9000]: ",
+      (endpointInput) => {
+        let endpoint =
+          endpointInput.trim() || "http://localhost:9000";
+
+        // Vérification simple URL
+        if (
+          !endpoint.startsWith("http://") &&
+          !endpoint.startsWith("https://")
+        ) {
+          console.log("❌ Endpoint invalide. Ajout automatique de http://");
+          endpoint = "http://" + endpoint;
+        }
+
+        rl.question("Access Key [minioadmin]: ", (accessInput) => {
+          const accessKey = accessInput.trim() || "minioadmin";
+
+          rl.question("Secret Key [minioadmin]: ", (secretInput) => {
+            const secretKey = secretInput.trim() || "minioadmin";
+
+            console.log("\nConfiguration alias...");
+            runMc(
+              `alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`
+            );
+
+            callback(alias);
+          });
         });
-      });
-    });
+      }
+    );
   });
 }
+
 
 // -----------------------------------------------------
 // MENU PRINCIPAL

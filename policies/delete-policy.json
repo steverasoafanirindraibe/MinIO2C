@@ -4,7 +4,7 @@
     {
       "Effect": "Allow",
       "Action": [
-        "s3:*"
+        "s3:DeleteBucket"
       ],
       "Resource": [
         "arn:aws:s3:::documents",

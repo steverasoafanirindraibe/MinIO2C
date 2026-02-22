@@ -81,11 +81,11 @@ function runMc(command) {
 // -----------------------------------------------------
 
 function configureAlias(callback) {
-  rl.question("Alias MinIO (ex: local) [local]: ", (aliasInput) => {
+  rl.question("|==|  Alias MinIO (ex: local) : ", (aliasInput) => {
     const alias = aliasInput.trim() || "local";
 
     rl.question(
-      "Endpoint (ex: http://localhost:9000) [http://localhost:9000]: ",
+      "|==|  Endpoint (ex: http://localhost:9000) [http://localhost:9000]: ",
       (endpointInput) => {
         let endpoint =
           endpointInput.trim() || "http://localhost:9000";
@@ -95,17 +95,17 @@ function configureAlias(callback) {
           !endpoint.startsWith("http://") &&
           !endpoint.startsWith("https://")
         ) {
-          console.log("❌ Endpoint invalide. Ajout automatique de http://");
+          console.log("|==|  Endpoint invalide. Ajout automatique de http://");
           endpoint = "http://" + endpoint;
         }
 
-        rl.question("Access Key [minioadmin]: ", (accessInput) => {
+        rl.question("|==|  Access Key (by default: minioadmin): ", (accessInput) => {
           const accessKey = accessInput.trim() || "minioadmin";
 
-          rl.question("Secret Key [minioadmin]: ", (secretInput) => {
+          rl.question("|==|  Secret Key (by default: minioadmin): ", (secretInput) => {
             const secretKey = secretInput.trim() || "minioadmin";
 
-            console.log("\nConfiguration alias...");
+            console.log("\n|==|  Configuration alias...");
             runMc(
               `alias set ${alias} ${endpoint} ${accessKey} ${secretKey}`
             );
@@ -124,109 +124,144 @@ function configureAlias(callback) {
 // -----------------------------------------------------
 
 function showMenu(alias) {
-  console.log("\n=== MinIO2C MENU ===");
-  console.log("1 - Voir les utilisateurs");
-  console.log("2 - Créer un utilisateur");
-  console.log("3 - Supprimer un utilisateur");
-  console.log("4 - Créer un bucket");
-  console.log("5 - Voir les buckets");
-  console.log("6 - Créer une policy");
-  console.log("7 - Attacher une policy à un user");
-  console.log("8 - Voir les policies d’un utilisateur");
-  console.log("0 - Quitter");
+  console.log("\n|==============================================================================================|");
+  console.log("|========|  MinIO2C MENU  |====================================================================|");
+  console.log("|==============================================================================================|");
+  console.log("|==|  01 - Voir les utilisateurs                         |=====================================|");
+  console.log("|==|  02 - Créer un utilisateur                          |=====================================|");
+  console.log("|==|  03 - Supprimer un utilisateur                      |=====================================|");
+  console.log("|==|  04 - Créer un bucket                               |=====================================|");
+  console.log("|==|  05 - Voir les buckets                              |=====================================|");
+  console.log("|==|  06 - Créer une policy                              |=====================================|");
+  console.log("|==|  07 - Lister toutes les policies                    |=====================================|");
+  console.log("|==|  08 - Attacher une policy à un user                 |=====================================|");
+  console.log("|==|  09 - Détacher une policy d’un utilisateur          |=====================================|");
+  console.log("|==|  10 - Voir les policies d’un utilisateur            |=====================================|");
+  console.log("|==|  11 - Quitter                                       |=====================================|");
 
-  rl.question("Choix: ", (choice) => {
+  rl.question("|==|  Choix: ", (choice) => {
     switch (choice) {
-      case "1":
+      case "01":
         runMc(`admin user list ${alias}`);
-        break;
+        showMenu(alias);
+        return;
 
-      case "2":
-        rl.question("Nom utilisateur: ", (user) => {
-          rl.question("Mot de passe: ", (pass) => {
+      case "02":
+        rl.question("|==|  Nom utilisateur (ex: Steve): ", (user) => {
+          rl.question("|==|  Mot de passe: ", (pass) => {
             runMc(`admin user add ${alias} ${user} ${pass}`);
             showMenu(alias);
           });
         });
         return;
 
-      case "3":
-        rl.question("Nom utilisateur à supprimer: ", (user) => {
+      case "03":
+        rl.question("|==|  Nom utilisateur à supprimer: ", (user) => {
           runMc(`admin user remove ${alias} ${user}`);
           showMenu(alias);
         });
         return;
 
-      case "4":
-        rl.question("Nom du bucket: ", (bucket) => {
+      case "04":
+        rl.question("|==|  Nom du bucket (ex: my-bucket): ", (bucket) => {
           runMc(`mb ${alias}/${bucket}`);
           showMenu(alias);
         });
         return;
 
-      case "5":
+      case "05":
         runMc(`ls ${alias}`);
-        break;
+        showMenu(alias);
+        return;
 
-      case "6":
-        rl.question("Nom policy: ", (policyName) => {
-          rl.question("Chemin fichier JSON policy: ", (file) => {
-            runMc(
-              `admin policy add ${alias} ${policyName} ${file}`
-            );
+      case "06":
+        rl.question("\n|==|  Nom policy: ", (policyName) => {
+          console.log("|==|  Pour créer cette policy, vous pouvez choisir entre ces fichiers json existants :");
+          console.log("|==|  - read-policy.json : policy en lecture seule");
+          console.log("|==|  - write-policy.json : policy en écriture seule");
+          console.log("|==|  - delete-policy.json : policy en suppression");
+          console.log("|==|  - full-policy.json : policy admin (full access)");
+          console.log("\n|==|  OU vous pouvez aussi créer votre propre fichier JSON de policy dans le dossier 'policies'.");
+          rl.question("\n|==|  Chemin fichier JSON policy (ex: ./policies/read-policy.json): ", (file) => {
+            if (!fs.existsSync(file)) {
+              console.log("|==|  Fichier introuvable :", file);
+              showMenu(alias);
+              return;
+            }
+            runMc(`admin policy create ${alias} ${policyName} ${file}`);
             showMenu(alias);
           });
         });
         return;
 
-      case "7":
-        rl.question("Nom utilisateur: ", (user) => {
-          rl.question("Nom policy: ", (policy) => {
-            runMc(
-              `admin policy attach ${alias} ${policy} --user=${user}`
-            );
+      case "07":
+        runMc(`admin policy list ${alias}`);
+        showMenu(alias);
+        return;
+
+      case "08":
+        rl.question("|==|  Nom utilisateur: ", (user) => {
+          rl.question("|==|  Nom policy: ", (policy) => {
+            runMc(`admin policy attach ${alias} ${policy} --user=${user}`);
             showMenu(alias);
           });
         });
         return;
-        
-      case "8":
-        rl.question("Nom utilisateur: ", (user) => {
+
+      case "09":
+        rl.question("|==|  Nom utilisateur: ", (user) => {
+          rl.question("|==|  Nom policy: ", (policy) => {
+            runMc(`admin policy detach ${alias} ${policy} --user=${user}`);
+            showMenu(alias);
+          });
+        });
+        return;
+
+      case "10":
+        rl.question("|==|  Nom utilisateur: ", (user) => {
           runMc(`admin policy entities ${alias} --user ${user}`);
           showMenu(alias);
         });
         return;
 
-      case "0":
-        console.log("Au revoir 👋");
+      case "11":
+        console.log("|==|  Au revoir 👋");
         rl.close();
         return;
 
       default:
-        console.log("Choix invalide.");
+        console.log("|==|  Choix invalide.");
+        showMenu(alias);
+        return;
     }
-
-    showMenu(alias);
   });
 }
 
 // -----------------------------------------------------
 // LANCEMENT APPLICATION
 // -----------------------------------------------------
-
-console.log("=== MinIO2C ===");
+console.log("|=============================================================================================|");
+console.log("|========================================|  MinIO2C  |========================================|");
+console.log("|=============================================================================================|");
+console.log("|==|                                                                                       |==|");
+console.log("|==|  A simple MinIO management tool. See the README for more information.                 |==|");
+console.log("|==|  NB: Please make sure that the MinIO server is installed and running (via Docker or   |==|");
+console.log("|==|  standalone) before proceeding with the mc configuration.                             |==|");
+console.log("|==|                                                                                       |==|");
+console.log("|=============================================================================================|");
+console.log("|==|                                                                                       |==|");
 
 // Vérifie si mc.exe existe
 if (!fs.existsSync(MC_PATH)) {
   rl.question(
-    "mc.exe n'est pas installé. Voulez-vous le télécharger ? (y/n): ",
+    "|==|  mc.exe n'est pas installé. Voulez-vous le télécharger ? (y/n): ",
     (answer) => {
       if (answer.toLowerCase() === "y") {
         downloadMc(() => {
           configureAlias(showMenu);
         });
       } else {
-        console.log("mc est requis pour continuer.");
+        console.log("|==|  mc est requis pour continuer.");
         process.exit(1);
       }
     }

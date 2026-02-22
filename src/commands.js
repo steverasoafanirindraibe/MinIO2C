@@ -11,6 +11,7 @@ export function setAlias(alias, endpoint, access, secret) {
  * Voir tous les utilisateurs
  */
 export function listUsers(alias) {
+  console.log("\n|==|  ")
   run(`admin user list ${alias}`);
 }
 
@@ -18,6 +19,7 @@ export function listUsers(alias) {
  * Créer utilisateur
  */
 export function createUser(alias, user, pass) {
+  console.log("\n|==|  ")
   run(`admin user create ${alias} ${user} ${pass}`);
 }
 

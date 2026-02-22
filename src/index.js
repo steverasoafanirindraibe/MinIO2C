@@ -137,7 +137,12 @@ function showMenu(alias) {
   console.log("|==|  08 - Attacher une policy à un user                 |=====================================|");
   console.log("|==|  09 - Détacher une policy d’un utilisateur          |=====================================|");
   console.log("|==|  10 - Voir les policies d’un utilisateur            |=====================================|");
-  console.log("|==|  11 - Quitter                                       |=====================================|");
+  console.log("|==|  11 - Voir le détail d'une policy                   |=====================================|");
+  console.log("|==|  12 - Supprimer une policy                          |=====================================|");
+  console.log("|==|  13 - Supprimer un bucket                           |=====================================|");
+  console.log("|==|  14 - Supprimer un bucket (force - dangereux)       |=====================================|");
+  console.log("|==|  15 - Supprimer définitivement un utilisateur       |=====================================|");
+  console.log("|==|  16 - Quitter                                       |=====================================|");
 
   rl.question("|==|  Choix: ", (choice) => {
     switch (choice) {
@@ -225,6 +230,73 @@ function showMenu(alias) {
         return;
 
       case "11":
+        rl.question("|==|  Nom de la policy: ", (policy) => {
+          runMc(`admin policy info ${alias} ${policy}`);
+          showMenu(alias);
+        });
+        return;
+
+      case "12":
+        rl.question("|==|  Nom de la policy à supprimer: ", (policy) => {
+          rl.question("⚠️  Confirmer suppression ? (yes/no): ", (confirm) => {
+            if (confirm.toLowerCase() === "yes") {
+              runMc(`admin policy remove ${alias} ${policy}`);
+            } else {
+              console.log("|==|  Suppression annulée.");
+            }
+            showMenu(alias);
+          });
+        });
+        return;
+
+      case "13":
+        rl.question("|==|  Nom du bucket à supprimer: ", (bucket) => {
+          rl.question("⚠️  Confirmer suppression ? (yes/no): ", (confirm) => {
+            if (confirm.toLowerCase() === "yes") {
+              runMc(`rb ${alias}/${bucket}`);
+            } else {
+              console.log("|==|  Suppression annulée.");
+            }
+            showMenu(alias);
+          });
+        });
+        return;
+
+      case "14":
+        rl.question("|==|  Nom du bucket à supprimer (force): ", (bucket) => {
+          console.log("⚠️  Cette action supprimera TOUT le contenu !");
+          rl.question("⚠️  Taper DELETE pour confirmer: ", (confirm) => {
+            if (confirm === "DELETE") {
+              runMc(`rb --force ${alias}/${bucket}`);
+            } else {
+              console.log("|==|  Suppression annulée.");
+            }
+            showMenu(alias);
+          });
+        });
+        return;
+
+      case "15":
+        rl.question("|==|  Nom utilisateur à supprimer: ", (user) => {
+
+          if (user === "minioadmin") {
+            console.log("|==|  Impossible de supprimer le ROOT.");
+            showMenu(alias);
+            return;
+          }
+
+          rl.question("⚠️  Cette action est définitive. Taper DELETE pour confirmer: ", (confirm) => {
+            if (confirm === "DELETE") {
+              runMc(`admin user remove ${alias} ${user}`);
+            } else {
+              console.log("|==|  Suppression annulée.");
+            }
+            showMenu(alias);
+          });
+        });
+        return;
+
+      case "16":
         console.log("|==|  Au revoir 👋");
         rl.close();
         return;
